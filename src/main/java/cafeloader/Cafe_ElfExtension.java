@@ -87,6 +87,7 @@ public class Cafe_ElfExtension extends ElfExtension {
 			Program program = elfLoadHelper.getProgram();
 			elfLoadHelper.setElfSymbolAddress(elfSymbol, address);
 			elfLoadHelper.createSymbol(address, name, true, elfSymbol.isAbsolute(), null);
+			program.getSymbolTable().addExternalEntryPoint(address);
 
 			if (elfSymbol.isFunction()) {
 				program.getExternalManager().addExtFunction(rplName, name, address,
@@ -111,6 +112,15 @@ public class Cafe_ElfExtension extends ElfExtension {
 		String name = section.getNameAsString();
 		if (name != null && name.contentEquals(".rodata")) {
 			return false;
+		}
+
+		// Force .dimport section to writeable so compiler does not inline
+		// the value... even though its external...
+		// TODO: Maybe there is a better way to define .dimport/.fimport
+		// sections as not real loaded in memory sections so that the
+		// compiler does not inline it's values?
+		if (name != null && name.startsWith(".dimport")) {
+			return true;
 		}
 
 		return (section.getFlags() & ElfSectionHeaderConstants.SHF_WRITE) != 0;
